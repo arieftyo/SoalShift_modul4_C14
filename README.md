@@ -8,8 +8,7 @@ Hacker tersebut menyusup ke dalam file system yang ada di dalam PC Atta dengan m
 Atta menginginkan nama file system yang akan kalian buat adalah “AFSHiaAP”, yang nama kepanjangannya adalah AHHA’s File System: Hierarchical and Advanced Protection. Berikut ini kebutuhan yang harus kalian penuhi:
 
 
-1. Semua nama file dan folder harus terenkripsi
-Enkripsi yang Atta inginkan sangat sederhana, yaitu Caesar cipher. Namun, Kusuma mengatakan enkripsi tersebut sangat mudah dipecahkan. Dia menyarankan untuk character list diekspansi,tidak hanya alfabet, dan diacak. Berikut character list yang dipakai:
+1. Semua nama file dan folder harus terenkripsi Enkripsi yang Atta inginkan sangat sederhana, yaitu Caesar cipher. Namun, Kusuma mengatakan enkripsi tersebut sangat mudah dipecahkan. Dia menyarankan untuk character list diekspansi,tidak hanya alfabet, dan diacak. Berikut character list yang dipakai:
 
 qE1~ YMUR2"`hNIdPzi%^t@(Ao:=CQ,nx4S[7mHFye#aT6+v)DfKL$r?bkOGB>}!9_wV']jcp5JZ&Xl|\8s;g<{3.u*W-0
 
@@ -55,8 +54,8 @@ void dekripsi(char * dekrip){
 
 Untuk pengenkripsian dan sebaliknya dilakukan di fungsi enkripsi dan dekripsi. Fungsi enkripsi yakni menukar huruf yang ada dengan huruf yang sama pada list karakter yang dipakai dengan menambahkan urutannya dengan 17. Untuk dekripsinya ditambahkan 77 karena jumlah total dari list karakter tersebut adalah 94 sehingga jika hasilnya lebih dari 94 maka akan kembali lagi menuju list karakter yang pertama. Lalu fungsi enkripsi dijalankan di semua fungsi yang berhubungan dengan pembuatan dan pembacaan file atau direktori.
 
-2. Semua file video yang tersimpan secara terpecah-pecah (splitted) harus secara otomatis tergabung (joined) dan diletakkan dalam folder “Videos”
-Urutan operasi dari kebutuhan ini adalah:
+
+2. Semua file video yang tersimpan secara terpecah-pecah (splitted) harus secara otomatis tergabung (joined) dan diletakkan dalam folder “Videos” Urutan operasi dari kebutuhan ini adalah:
 Tepat saat sebelum file system di-mount
 Secara otomatis folder “Videos” terbuat di root directory file system
 Misal ada sekumpulan file pecahan video bernama “computer.mkv.000”, “computer.mkv.001”, “computer.mkv.002”, dst. Maka secara otomatis file pecahan tersebut akan di-join menjadi file video “computer.mkv”
@@ -115,6 +114,7 @@ void *gabungVideo(void *param){
 ```
 
 
+
 3. Sebelum diterapkannya file system ini, Atta pernah diserang oleh hacker LAPTOP_RUSAK yang menanamkan user bernama “chipset” dan “ic_controller” serta group “rusak” yang tidak bisa dihapus. Karena paranoid, Atta menerapkan aturan pada file system ini untuk menghapus “file bahaya” yang memiliki spesifikasi:
 Owner Name 	: ‘chipset’ atau ‘ic_controller’
 Group Name	: ‘rusak’
@@ -162,8 +162,10 @@ else{
 ```
 Jadi jika ada file yang memiliki extensi tersebut maka akan menyimpan nama file, group ID, owner ID, dan waktu terakhir diakses dalam file “filemiris.txt” dan menghapus file tersebut. 
 
+
 4. Pada folder YOUTUBER, setiap membuat folder permission foldernya akan otomatis menjadi 750. Juga ketika membuat file permissionnya akan otomatis menjadi 640 dan ekstensi filenya akan bertambah “.iz1”. File berekstensi “.iz1” tidak bisa diubah permissionnya dan memunculkan error bertuliskan “File ekstensi iz1 tidak boleh diubah permissionnya.”
 
+### Jawab :
 untuk fungsi mkdir ditambahkan :
 
 ```
