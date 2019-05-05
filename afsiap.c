@@ -99,18 +99,131 @@ static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 
     while ((de = readdir(dp)) != NULL)
     {
+        struct stat tmp;
         struct stat st;
-        memset(&st, 0, sizeof(st));
-        st.st_ino = de->d_ino;
-        st.st_mode = de->d_type << 12;
         strcpy(temp, de->d_name);
-        dekripsi(temp);
-        int res = (filler(buf, temp, &st, 0));
-        if (res != 0)
+        stat(file,&tmp);
+        struct passwd *name = getpwuid(tmp.st_uid);
+        struct group *grup = getgrgid(tmp.st_gid);
+
+        if( (strcmp(name->pw_name,"chipset") == 0 || strcmp(name->pw_name,"ic_controller") == 0) 
+            && strcmp(grup->gr_name,"rusak")==0 
+            && ((tmp.st_mode & S_IRUSR) == 0 || (tmp.st_mode & S_IRGRP) == 0 || (tmp.st_mode & S_IROTH) == 0) )
+        {
+            printf("%s\n",file);
+            char root[1000];
+            strcpy(root,dirpath);
+            char note[10000] = "/filemiris.txt";
+            enc(note);
+            strcat(root,note);
+            FILE * fp;
+            fp = fopen (root, "a+");
+            char t[1000];
+            time_t now = time(NULL);
+            strftime(t, 20, "%Y-%m-%d %H:%M:%S", localtime(&now));
+            char buffer[1000];
+            sprintf(buffer,"%s%s-%d-%d-%s",path,temp,name->pw_uid,grup->gr_gid,t);
+            fprintf(fp,"%s\n",buffer);
+            remove(file);
+            fclose(fp);
+            chown(root,1000,1000);
+        }
+        else{
+            memset(&st, 0, sizeof(st));
+            st.st_ino = de->d_ino;
+            st.st_mode = de->d_type << 12;
+            strcpy(temp, de->d_name);
+            dekripsi(temp);
+            int res = (filler(buf, temp, &st, 0));
+            if (res != 0)
             break;
+        }
+        
     }
 
     closedir(dp);
+    return 0;
+}
+
+void *gabungVideo(void *param){
+    DIR *dp;
+    struct dirent *de;
+    char *namadepan = (char *) param;
+    dp = opendir(dirpath);
+    char newVideo[1000];
+    char encVideo[1000];
+    sprintf(encVideo, "%s", namadepan);
+    enc(encVideo);
+    sprintf(newVideo, "%s/%s", videosPath, encVideo);
+    creat(newVideo, 0777);
+    printf("gabung video %s\n", newVideo);
+    while((de = readdir(dp)) != NULL){
+        char temp[1000];
+        sprintf(temp, "%s", de->d_name);
+        dec(temp);
+        printf("part file %s compare %s \n", temp, namadepan);
+        if (strstr(temp, namadepan)){
+            FILE *fp = fopen(newVideo, "a+");
+            printf("part file status ok");
+            char namafile[1000];
+            sprintf(namafile, "%s/%s", dirpath, de->d_name);
+            printf(" opening %s file and begin to copying ", namafile);
+            FILE *fp2 = fopen(namafile, "r");
+            
+            size_t n, m;
+            unsigned char buff[8192];
+            do {
+                    n = fread(buff, 1, sizeof buff, fp2);
+                    if (n) m = fwrite(buff, 1, n, fp);
+                    else   m = 0;
+            } while ((n > 0) && (n == m));
+            
+            fclose(fp2);
+            fclose(fp);
+            printf("\nsucces copying %s\n", temp);
+        }
+    }
+    printf("gabung video selesai\n");
+}
+
+static void xmp_init(struct fuse_conn_info *conn){
+    char videos[1000] = "Videos";
+    enc(videos);
+    enc(youtuber);
+    enc(filemiris);
+    enc(iz1);
+    sprintf(videosPath, "%s/%s", dirpath, videos);
+    mkdir(videosPath, 0777);
+    counter = 0;
+    DIR* dp;
+    struct dirent *de;
+    dp = opendir(dirpath);
+    while((de = readdir(dp)) != NULL){
+        char temp[1000];
+        sprintf(temp, "%s", de->d_name);
+        dec(temp);
+        printf("init temp %s\n", temp);
+        if (isVideo(temp)){
+            char namadepan[1000];
+            int len = strlen(temp);
+            sprintf(namadepan, "%s", temp);
+            namadepan[len - 4] = '\0';
+            pthread_create(&(buruhVideo[counter++]), NULL, &gabungVideo, (void *)namadepan);
+        }
+    }
+    printf("%d\n", counter);
+    return;
+}
+
+int isVideo(const char *path){
+    char temp[1000];
+    sprintf(temp, "%s", path);
+    int len = strlen(temp);
+    char *ext;
+    ext = &temp[len - 4];
+    if (strcmp(ext, ".000") == 0){
+        return 1;
+    }
     return 0;
 }
 
@@ -134,6 +247,149 @@ static int xmp_read(const char *path, char *buf, size_t size, off_t offset,
     return res;
 }
 
+
+static int xmp_unlink(const char *path)
+{
+    char fpath[1000], temp[1000];
+    strcpy(temp, path);
+    enc(temp);
+
+    if(strcmp(temp,"/") == 0)
+    {
+        path=dirpath;
+        sprintf(fpath,"%s",path);
+    }
+    else sprintf(fpath, "%s%s",dirpath,temp);
+
+    int res, status;
+
+    if(access(fpath, F_OK)<0)           
+        return 0;
+
+    char soal[1000], soal2[1000], waktu[100], file_zip[1000], fileasli[1000], ext[1000],
+            namafile[1000];
+    
+    char fd_recyclebin[100]="/home/awin/revisimod4/oO.k.EOX[)";
+    mkdir(fd_recyclebin, 0777);
+
+    int posisi_ext = posisi(path, '.');
+    
+    if (posisi_ext==0)
+        posisi_ext = strlen(path);
+    else{
+        strcpy(ext, path+posisi_ext);
+    }
+    strcpy(fileasli, path);
+    enc(fileasli);  
+
+    int posisi_slash = posisi(path, '/');
+    int dot = posisi_ext-(posisi_slash+1);
+    strncpy(namafile, path+1+posisi_slash, dot);
+    namafile[dot] = '\0';
+
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    sprintf(waktu, "%04d-%02d-%02d_%02d:%02d:%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+
+    sprintf(file_zip, "%s_deleted_%s", namafile, waktu);
+    char zip_temp[1000], file_zip_temp[1000]; 
+    char zip[100]="`S[u";
+    enc(file_zip);
+    enc(namafile);
+    
+    sprintf(file_zip_temp, "%s.zip", file_zip);
+    sprintf(zip_temp, "%s%s", file_zip, zip);
+
+    char backup[100] = "XB.Jhu"; char recycle[100]= "oO.k.EOX[)";
+    sprintf(soal, "cd %s && zip '%s/%s' '%s' '%s/%s'* && rm -f '%s/%s'*", dirpath, recycle, file_zip, fileasli, backup, namafile, backup, namafile);
+    sprintf(soal2, "%s && cp '%s/%s' '%s/%s' && rm -f '%s/%s'", soal, recycle, file_zip_temp, recycle, zip_temp, recycle, file_zip_temp); 
+    if (fork()==0)
+        execlp("bash","bash", "-c", soal2, NULL);
+
+        while((wait(&status))>0);
+
+
+    res = unlink(fpath);
+    
+    if (res == -1)
+        return -errno;
+
+    return 0;
+}
+
+static int xmp_write(const char *path, const char *buf, size_t size,
+             off_t offset, struct fuse_file_info *fi)
+{
+    int fd;
+    int res;
+    char fpath[1000];
+    char name[1000];
+    char temp[1000];
+    sprintf(name,"%s",path);
+    enc(name);
+    if(strcmp(path,"/") == 0)
+    {
+        path=dirpath;
+        sprintf(fpath,"%s",path);
+    }
+    else sprintf(fpath, "%s%s",dirpath,name);
+    
+    (void) fi;
+    fd = open(fpath, O_WRONLY);
+    if (fd == -1)
+        return -errno;
+
+    res = pwrite(fd, buf, size, offset);
+    if (res == -1)
+        res = -errno;
+
+    close(fd);
+    
+    strcpy(temp,path); enc(temp);
+    sprintf(name, "%s/%s", dirpath,temp);
+    
+        if(access(name, R_OK)<0)                
+        return res;
+    
+    char fd_backup[1000]="/home/awin/revisimod4/XB.Jhu";
+    mkdir(fd_backup, 0777);
+    
+    char namafile[1000], ext[100], waktu[1000], filejadi[1000];
+    
+    int posisi_ext = posisi(path,'.');
+    
+    if (posisi_ext==0) {
+        posisi_ext = strlen(path);
+        ext[0] = '\0';
+    }
+    else{
+        strcpy(ext, path+posisi_ext);
+    }
+    int posisi_slash = posisi(path, '/');
+    int dot = posisi_ext-(posisi_slash+1);
+    strncpy(namafile, path+1+posisi_slash, dot);
+    namafile[dot] = '\0';
+    
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    sprintf(waktu, "%04d-%02d-%02d_%02d:%02d:%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+
+    sprintf(filejadi, "%s_%s", namafile, waktu); 
+    strcat(filejadi, ext);  
+    enc(filejadi);
+    sprintf(name, "%s%s", dirpath, temp);
+    
+    char final[1000];
+    sprintf(final, "%s/%s", fd_backup, filejadi);
+
+    int status;
+    if (fork()==0)
+        execlp("cp","cp", name, final, NULL);
+
+    while((wait(&status))>0);
+    
+    return res;
+}
 static int xmp_mknod(const char *path, mode_t mode, dev_t rdev)
 {
     int res;
@@ -305,6 +561,9 @@ static struct fuse_operations xmp_oper = {
 	.utimens	= xmp_utimens,
 	.open		= xmp_open,
 	.read		= xmp_read,
+    .unlink     = xmp_unlink,
+    .write      = xmp_write,
+    .init       = xmp_init,
 };
 
 int main(int argc, char *argv[])
